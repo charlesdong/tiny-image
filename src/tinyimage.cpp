@@ -46,12 +46,12 @@ unsigned char * _tinyimg_load(FILE * fp, const char * extension, int * width, in
 
 unsigned char * _tinyimg_load_bmp(FILE * fp, int * width, int * height)
 {
-	unsigned char * image;
-	unsigned char * palette = NULL;
-	int width_file;			/* Pixels per line in BMP (note that BMP has 4-pixel alignment for each line) */
-	int size;
-	short bit_count;
-	int color_count = 0;
+	unsigned char * image;				// image data
+	unsigned char * palette = NULL;		// palette data (if uses palette)
+	int width_file;						// pixels per line in BMP (note that BMP has 4-pixel alignment for each line)
+	int size;							// pixel count
+	short bit_count;					// bit count per pixel (24 if no palette)
+	int color_count = 0;				// colors used (if uses palette)
 	unsigned char temp;
 	int count = 0;
 
@@ -70,6 +70,7 @@ unsigned char * _tinyimg_load_bmp(FILE * fp, int * width, int * height)
 	fread(&bit_count, sizeof(short), 1, fp);	// read bit count
 
 	fseek(fp, 54, SEEK_SET);
+	/* If uses palette (bit count is not 24) */
 	if (bit_count != 24)
 	{
 		color_count = (int)pow(2.0, bit_count);
