@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <math.h>		// for pow()
 
 /* The error code */
 TinyImgError _error;
@@ -46,8 +47,13 @@ unsigned char * _tinyimg_load(FILE * fp, const char * extension, int * width, in
 unsigned char * _tinyimg_load_bmp(FILE * fp, int * width, int * height)
 {
 	unsigned char * image;
-	int width_file;			/* Pixels per row in BMP (note that BMP has 4-pixel alignment for each line) */
+	unsigned char * palette = NULL;
+	int width_file;			/* Pixels per line in BMP (note that BMP has 4-pixel alignment for each line) */
 	int size;
+	short bit_count;
+	int color_count = 0;
+	unsigned char temp;
+	int count = 0;
 
 	/* Checks if the pointers are not NULL */
 	if (width == NULL || height == NULL)
@@ -60,14 +66,36 @@ unsigned char * _tinyimg_load_bmp(FILE * fp, int * width, int * height)
 	fread(width, sizeof(int), 1, fp);		// read width
 	fread(height, sizeof(int), 1, fp);		// read height
 
+	fseek(fp, 28, SEEK_SET);
+	fread(&bit_count, sizeof(short), 1, fp);	// read bit count
+
+	fseek(fp, 54, SEEK_SET);
+	if (bit_count != 24)
+	{
+		color_count = (int)pow(2.0, bit_count);
+		palette = (unsigned char *)malloc(sizeof(unsigned char) * 4 * color_count);
+		fread(palette, sizeof(unsigned char), 4 * color_count, fp);
+	}
+
 	/* Allocates memory for the image */
-	width_file = ((*width) + 3) / 4 * 4;		/* Increase the width to make sure it's multiple of 4 */
-	size = 3 * width_file * (*height);
-	image = (unsigned char *)malloc(sizeof(unsigned char) * size);
+	width_file = ((*width) + 3) / 4 * 4;		// Increase the width to make sure it's multiple of 4
+	size = width_file * (*height);
+	image = (unsigned char *)malloc(sizeof(unsigned char) * size * 3);
 
 	/* Reads the image data */
-	fseek(fp, 54, SEEK_SET);
-	fread(image, sizeof(unsigned char), size, fp);
+	if (bit_count == 24)
+		fread(image, sizeof(unsigned char), size * 3, fp);
+	else
+	{
+		while (count < size)
+		{
+			fread(&temp, sizeof(unsigned char), 1, fp);
+			image[count * 3] = palette[temp * 4];
+			image[count * 3 + 1] = palette[temp * 4 + 1];
+			image[count * 3 + 2] = palette[temp * 4 + 2];
+			count++;
+		}
+	}
 
 	fclose(fp);
 	return image;
