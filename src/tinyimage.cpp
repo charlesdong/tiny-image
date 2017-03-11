@@ -1,12 +1,14 @@
-#include "tinyimage.h"
-
-#include <stdio.h>
-#include <string.h>
+/* Source file for TinyImage */
 
 /* Prevent error C4996 in Visual Studio compilers */
 #ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
 #endif
+
+#include "tinyimage.h"
+
+#include <stdio.h>
+#include <string.h>
 
 /* The error code */
 TinyImgError _error;
@@ -44,6 +46,7 @@ unsigned char * _tinyimg_load(FILE * fp, const char * extension, int * width, in
 unsigned char * _tinyimg_load_bmp(FILE * fp, int * width, int * height)
 {
 	unsigned char * image;
+	int width_file;			/* Pixels per row in BMP (note that BMP has 4-pixel alignment for each line) */
 	int size;
 
 	/* Checks if the pointers are not NULL */
@@ -58,7 +61,8 @@ unsigned char * _tinyimg_load_bmp(FILE * fp, int * width, int * height)
 	fread(height, sizeof(int), 1, fp);		// read height
 
 	/* Allocates memory for the image */
-	size = 3 * (*width) * (*height);
+	width_file = ((*width) + 3) / 4 * 4;		/* Increase the width to make sure it's multiple of 4 */
+	size = 3 * width_file * (*height);
 	image = (unsigned char *)malloc(sizeof(unsigned char) * size);
 
 	/* Reads the image data */
